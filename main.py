@@ -10,7 +10,12 @@ class Main:
         self.dudes = []
         self.Width = self.screen.get_width()
         self.Height = self.screen.get_height()
-        self.elast= -2
+        self.PrevW = self.screen.get_width()
+        self.PrevH = self.screen.get_height()
+
+        self.VeloY = 0
+        self.VeloX = 0
+        self.elast= -0.75
         for i in range(0):
             self.MakeObj(random.randint(10, 150), random.randint(10, 150), random.randint(0, self.Width), random.randint(0, self.Height), i)
 
@@ -21,12 +26,24 @@ class Main:
     def MakeObj(self, sizX, sizY, x, y, num):
         self.dudes.append(Object(self,sizX, sizY,x,y, num))
         
+    def Velo(self):
+        self.PrevW = self.Width
+        self.PrevH = self.Height
+        self.Width = self.screen.get_width()
+        self.Height = self.screen.get_height()
+        self.VeloX = self.Width - self.PrevW
+        self.VeloY = self.Height - self.PrevH
 
     def ITGOES(self):
+        tick = 0
         while self.goinmg:
             for event in pygame.event.get():
                 if event.type == pygame.QUIT:
                     self.goinmg = 0
+            
+            if tick % 5 ==0:
+                #print("NOW")
+                self.Velo()
             self.Width = self.screen.get_width()
             self.Height = self.screen.get_height()
             for dud in self.dudes:
@@ -37,6 +54,10 @@ class Main:
             for dud in self.dudes:
                 dud.Draw()
             pygame.display.flip()
+
+            tick+=1
+            if tick >= 60: 
+                tick = 0
 
             self.cloc.tick(60)
 
@@ -60,6 +81,8 @@ class Object:
         self.VeloX = 10
         self.VeloY = 0
 
+        self.mass = 1
+
         self.Movable = True
         self.grounded= False
         self.elastic = True
@@ -74,29 +97,34 @@ class Object:
             else:
                 self.grounded = False
 
-            if self.y+ self.RadiY > self.parent.Height:
-                self.y = self.parent.Height - self.RadiY
+        
+            if self.x >= self.parent.Width - self.RadiX:
+                self.VeloX = -self.Bounce(self.VeloX, self.parent.VeloX, self.mass, 0)
+                
 
-            if self.x >= self.parent.Width - self.RadiX or self.x <= self.RadiX:
-                self.VeloX *= -1
-
-            if self.x + self.RadiX >= self.parent.Width:
-                self.x = self.parent.Width - self.RadiX
-
-            elif self.x - self.RadiX < 0:
-                self.x = self.RadiX
-
+            elif self.x <= self.RadiX:
+                self.VeloX *= self.parent.elast
             if self.y <= self.RadiY:
-                self.VeloY*= self.parent.elast
-            if self.y < self.RadiY:
-                self.y = self.RadiY
-
+                self.VeloY *= self.parent.elast
+        
             if self.grounded:
                 self.y = self.parent.Height - self.RadiY
-                self.VeloY *= self.parent.elast
+                self.VeloY = -self.Bounce(self.VeloY, self.parent.VeloY, self.mass, 0)
+                self.VeloY *= -self.parent.elast
+                
 
             else:
                 self.accel(9.8)
+
+            if self.x + self.RadiX >= self.parent.Width:
+                self.x = self.parent.Width - self.RadiX
+            elif self.x - self.RadiX < 0:
+                self.x = self.RadiX
+
+            if self.y < self.RadiY:
+                self.y = self.RadiY
+            elif self.y+ self.RadiY > self.parent.Height:
+                self.y = self.parent.Height - self.RadiY
 
             self.x += self.VeloX
             self.y += self.VeloY
@@ -104,8 +132,9 @@ class Object:
 
             self.obj.center = (self.x, self.y)
 
-    #def Collision(self):
-
+    def Bounce(self, Velo1, Velo2, mass, mass2):
+        return Velo1 - Velo2
+    
     def accel(self, ac):
         self.VeloY = self.VeloY + ac*(1/60)
 
