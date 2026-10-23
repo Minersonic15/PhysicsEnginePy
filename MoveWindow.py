@@ -24,12 +24,14 @@ class Main:
         self.Xdisp = 0
         self.Ydisp=0
 
-        self.elast= -0.5
+        self.elast= -0.75
         for i in range(0):
             self.MakeObj(random.randint(10, 150), random.randint(10, 150), random.randint(0, self.Width), random.randint(0, self.Height), i)
 
         self.MakeObj(150, 100, 0,0, 1)
-        #elf.MakeObj(100, 150, 0, 0, 2)
+        self.MakeObj(100, 150, 300, 0, 20)
+        #self.MakeObj(300, 100, 0, 300, 3)
+
 
         self.ITGOES()
     def MakeObj(self, sizX, sizY, x, y, num):
@@ -59,12 +61,11 @@ class Main:
                 if event.type == pygame.QUIT:
                     self.goinmg = 0
             self.Prev2X, self.Prev2Y = self.x, self.y
-            if tick % 1 ==0:
-                #print("NOW")
-                self.Velo()
+            
+            self.Velo()
             self.Width = self.screen.get_width()
             self.Height = self.screen.get_height()
-
+            self.CheckCollide()
             self.x, self.y = self.window.position
             for dud in self.dudes:
                 dud.Update()
@@ -83,6 +84,47 @@ class Main:
 
         else:
             pygame.quit()
+
+    def Collision(self, a, b):
+        return(a.x -a.RadiX < b.x + b.RadiX and 
+                a.x + a.RadiX > b.x - b.RadiX and 
+                a.y - a.RadiY < b.y + b.RadiY and 
+                a.y + a.RadiY > b.y - b.RadiY)
+    
+    def CheckCollide(self):
+        for i in range(len(self.dudes)):
+            for j in range(i+1, len(self.dudes)):
+                a= self.dudes[i]
+                b = self.dudes[j]
+                if self.Collision(a,b):
+                    self.MakeBoing(a,b)
+                    
+
+    def MakeBoing(self, a, b):
+        overlapX = min(a.x + a.RadiX, b.x+ b.RadiX) - max(a.x - a.RadiX, b.x - b.RadiX)
+        overlapY = min(a.y + a.RadiY, b.y+ b.RadiY) - max(a.y - a.RadiY, b.y - b.RadiY)
+        aX = a.x
+        bX = b.x
+        axR = a.RadiX
+        bxR = b.RadiX
+        axV = a.VeloX
+        bxV = b.VeloX
+
+        aY = a.y
+        bY = b.y
+        ayR = a.RadiY
+        byR = b.RadiY
+        ayV = a.VeloY
+        byV = b.VeloY
+        
+        if overlapX < overlapY:
+            a.CollidedX(bX, bxR, bxV)
+            b.CollidedX(aX, axR, axV)
+            
+        else:
+            a.CollidedY(bY, byR, byV)
+            b.CollidedY(aY, ayR, ayV)
+            
 class Object:
     def __init__(self, pops, sizX, sizY, x, y, num):
         self.parent = pops
@@ -106,7 +148,7 @@ class Object:
 
         self.Movable = True
         self.grounded= False
-        self.elastic = True
+
 
 
         if self.y >= self.parent.Height - self.RadiY:
@@ -115,6 +157,8 @@ class Object:
     def Update(self):
         
         if self.Movable:
+            self.x -= self.parent.Xdisp
+            self.y -= self.parent.Ydisp
             if self.y >= self.parent.Height - self.RadiY:
                 self.grounded = True
                 
@@ -140,15 +184,7 @@ class Object:
                 self.VeloY *= -self.parent.elast
             else:
                 self.accel(9.8)
-                self.VeloY += self.GravVelo
-            if self.parent.Xdisp:
-                self.VeloX = -self.parent.Xdisp
-            
-            if self.parent.Ydisp:
-                self.VeloY = -self.parent.Ydisp
-            
-            
-                 
+
             if self.x + self.RadiX >= self.parent.Width:
                 self.x = self.parent.Width - self.RadiX
             elif self.x - self.RadiX < 0:
@@ -166,8 +202,26 @@ class Object:
 
     def Bounce(self, Velo1, Velo2, mass, mass2):
         return Velo1 - Velo2
-
+    def Bounce2(self, Velo1, Velo2, mass, mass2):
+        return Velo2
     
+
+    def CollidedX(self, colliderX, colliderRad, ColliderVelo):
+        if self.x > colliderX:
+            self.x = colliderX + colliderRad + self.RadiX
+        else:
+            self.x = colliderX - colliderRad - self.RadiX
+        self.VeloX = self.Bounce2(self.VeloX, ColliderVelo, 1,1)
+        self.VeloX *= -self.parent.elast
+
+    def CollidedY(self, colliderY, colliderRad, ColliderVelo):
+        if self.y > colliderY:
+            self.y = colliderY + colliderRad + self.RadiY 
+        else:
+            self.y = colliderY - colliderRad - self.RadiY
+        self.VeloY = self.Bounce2(self.VeloY, ColliderVelo, 1,1)
+        self.VeloY *= -self.parent.elast
+
     def accel(self, ac):
         self.VeloY = self.VeloY + ac*(1/60)
 
