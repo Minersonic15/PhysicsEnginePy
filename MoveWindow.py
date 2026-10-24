@@ -23,14 +23,16 @@ class Main:
 
         self.Xdisp = 0
         self.Ydisp=0
+        self.colour = (40,40,40)
 
-        self.elast= -0.75
+        self.elast= -0.99
         for i in range(0):
             self.MakeObj(random.randint(10, 150), random.randint(10, 150), random.randint(0, self.Width), random.randint(0, self.Height), i)
 
-        self.MakeObj(150, 100, 0,0, 1)
-        self.MakeObj(100, 150, 300, 0, 20)
-        #self.MakeObj(300, 100, 0, 300, 3)
+        self.MakeObj(150, 100, 0,0, 20)
+
+        self.MakeObj(100, 150, 100, 100, 0)
+        
 
 
         self.ITGOES()
@@ -60,6 +62,7 @@ class Main:
             for event in pygame.event.get():
                 if event.type == pygame.QUIT:
                     self.goinmg = 0
+            
             self.Prev2X, self.Prev2Y = self.x, self.y
             
             self.Velo()
@@ -71,7 +74,7 @@ class Main:
                 dud.Update()
 
 
-            self.screen.fill((40,40,40))
+            self.screen.fill(self.colour)
             for dud in self.dudes:
                 dud.Draw()
             pygame.display.flip()
@@ -116,7 +119,9 @@ class Main:
         byR = b.RadiY
         ayV = a.VeloY
         byV = b.VeloY
-        
+
+        #self.ColourSwap()
+
         if overlapX < overlapY:
             a.CollidedX(bX, bxR, bxV)
             b.CollidedX(aX, axR, axV)
@@ -124,14 +129,20 @@ class Main:
         else:
             a.CollidedY(bY, byR, byV)
             b.CollidedY(aY, ayR, ayV)
-            
+
+    def ColourSwap(self):
+        if self.colour == (40,40,40):
+            self.colour = (255,255,255)
+        else:
+            self.colour = (40,40,40)
 class Object:
     def __init__(self, pops, sizX, sizY, x, y, num):
         self.parent = pops
         self.im = pygame.Surface((sizX, sizY), pygame.SRCALPHA)
-        #self.im.fill((40,40,40))
+        self.im.fill((40,40,40))
         self.obj = self.im.get_rect()
-        pygame.draw.rect(self.im, (255,255,255), self.obj, width=5)
+        self.colour = (255,255,255)
+        pygame.draw.rect(self.im, (self.colour), self.obj, width=5)
         self.RadiX = sizX/2
         self.RadiY = sizY/2
         
@@ -140,7 +151,7 @@ class Object:
         
         
         self.obj.center = (self.x, self.y)
-        self.VeloX = 10
+        self.VeloX = num
         self.VeloY = 0
         self.GravVelo=0
 
@@ -203,6 +214,10 @@ class Object:
     def Bounce(self, Velo1, Velo2, mass, mass2):
         return Velo1 - Velo2
     def Bounce2(self, Velo1, Velo2, mass, mass2):
+        if self.colour == (255,255,255):
+            self.colour= (40,40,40)
+        else:
+            self.colour = (255,255,255)
         return Velo2
     
 
@@ -211,7 +226,7 @@ class Object:
             self.x = colliderX + colliderRad + self.RadiX
         else:
             self.x = colliderX - colliderRad - self.RadiX
-        self.VeloX = self.Bounce2(self.VeloX, ColliderVelo, 1,1)
+        self.VeloX = self.Bounce(self.VeloX, ColliderVelo, 1,1)
         self.VeloX *= -self.parent.elast
 
     def CollidedY(self, colliderY, colliderRad, ColliderVelo):
@@ -219,7 +234,7 @@ class Object:
             self.y = colliderY + colliderRad + self.RadiY 
         else:
             self.y = colliderY - colliderRad - self.RadiY
-        self.VeloY = self.Bounce2(self.VeloY, ColliderVelo, 1,1)
+        self.VeloY = self.Bounce(self.VeloY, ColliderVelo, 1,1)
         self.VeloY *= -self.parent.elast
 
     def accel(self, ac):
